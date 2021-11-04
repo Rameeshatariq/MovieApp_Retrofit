@@ -33,7 +33,7 @@ public class MovieListActivity extends AppCompatActivity {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                GetRetrofitResponse();
+                GetMovieById();
             }
         });
     }
@@ -71,6 +71,45 @@ public class MovieListActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<MovieSerachResponse> call, Throwable t) {
+
+            }
+        });
+    }
+
+
+    private void GetMovieById(){
+        MovieApi movieApi = Service.getMovieApi();
+        Call<MovieModel> responseCall = movieApi.getMovie(
+                550,
+                Credentials.API_KEY
+        );
+
+        responseCall.enqueue(new Callback<MovieModel>() {
+            @Override
+            public void onResponse(Call<MovieModel> call, Response<MovieModel> response) {
+                if(response.code() == 200){
+                    Log.d("TAG", "Response"+response.body().toString());
+
+                    MovieModel movie = response.body();
+
+
+                        Log.d("TAG", "Title: "+movie.getTitle());
+
+
+                }
+                else{
+                    try{
+                        Log.d("TAG", "Error"+response.errorBody().string());
+                    }
+                    catch (Exception e){
+
+                    }
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<MovieModel> call, Throwable t) {
 
             }
         });

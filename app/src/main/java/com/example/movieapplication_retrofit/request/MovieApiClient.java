@@ -42,14 +42,7 @@ public class MovieApiClient {
             retrieveMoviesRunnable = null;
         }
         retrieveMoviesRunnable = new RetrieveMoviesRunnable(query, pageNumber);
-        final Future myHandler= AppExecutors.getInstance().networkIO().submit(new Runnable() {
-            @Override
-            public void run() {
-                //Retrieving data
-
-            }
-        });
-
+        final Future myHandler= AppExecutors.getInstance().networkIO().submit(retrieveMoviesRunnable);
         AppExecutors.getInstance().networkIO().schedule(new Runnable() {
             @Override
             public void run() {
@@ -57,7 +50,7 @@ public class MovieApiClient {
                 myHandler.cancel(true);
 
             }
-        }, 5000, TimeUnit.MICROSECONDS);
+        }, 3000, TimeUnit.MILLISECONDS);
     }
 
     private class RetrieveMoviesRunnable implements Runnable{
@@ -79,6 +72,7 @@ public class MovieApiClient {
                     return;
                 }
                 if(response.code() == 200){
+                    Log.d("TAG", "Response: "+response.body().toString());
                     List<MovieModel> list = new ArrayList<>(((MovieSerachResponse)response.body()).getMovies());
 
                     if(page == 1){

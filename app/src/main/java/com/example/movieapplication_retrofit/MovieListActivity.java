@@ -44,7 +44,7 @@ public class MovieListActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 //GetMovieById();
-                searchMovieApi("Fast", 1);
+                searchMovieApi("fast", 1);
             }
         });
     }

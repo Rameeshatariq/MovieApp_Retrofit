@@ -1,6 +1,8 @@
 package com.example.movieapplication_retrofit;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -9,6 +11,7 @@ import android.widget.Button;
 
 import com.example.movieapplication_retrofit.Model.MovieModel;
 import com.example.movieapplication_retrofit.Utils.Credentials;
+import com.example.movieapplication_retrofit.ViewModels.MovieListViewModel;
 import com.example.movieapplication_retrofit.request.MovieApi;
 import com.example.movieapplication_retrofit.request.Service;
 import com.example.movieapplication_retrofit.response.MovieSerachResponse;
@@ -23,22 +26,48 @@ import retrofit2.Response;
 public class MovieListActivity extends AppCompatActivity {
 
     Button btn;
+    private MovieListViewModel movieListViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         btn = findViewById(R.id.btn);
+
+        movieListViewModel = new ViewModelProvider(this).get(MovieListViewModel.class);
+
+        ObserveAnyChange();
+
 
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                GetMovieById();
+                //GetMovieById();
+                searchMovieApi("Fast", 1);
             }
         });
     }
 
-    private void GetRetrofitResponse() {
+    private void ObserveAnyChange(){
+        movieListViewModel.getmMovies().observe(this, new Observer<List<MovieModel>>() {
+            @Override
+            public void onChanged(List<MovieModel> movieModels) {
+                if(movieModels != null){
+                    for(MovieModel movieModel: movieModels){
+                        Log.d("TAG", "onChanged: "+movieModel.getTitle());
+                    }
+                }
+
+            }
+        });
+    }
+
+    private  void searchMovieApi(String query, int pageNumber){
+        movieListViewModel.searchMovieApi(query, pageNumber);
+
+    }
+    /*private void GetRetrofitResponse() {
         MovieApi movieApi = Service.getMovieApi();
         Call<MovieSerachResponse> responseCall = movieApi.searchMovie(
                 Credentials.API_KEY,
@@ -113,5 +142,5 @@ public class MovieListActivity extends AppCompatActivity {
 
             }
         });
-    }
+    }*/
 }

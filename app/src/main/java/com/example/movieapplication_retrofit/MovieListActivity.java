@@ -1,165 +1,218 @@
 package com.example.movieapplication_retrofit;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
+import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.Toast;
+
 
 import com.example.movieapplication_retrofit.Adapters.MovieRecyclerView;
 import com.example.movieapplication_retrofit.Adapters.OnMovieListener;
 import com.example.movieapplication_retrofit.Model.MovieModel;
-import com.example.movieapplication_retrofit.Utils.Credentials;
 import com.example.movieapplication_retrofit.ViewModels.MovieListViewModel;
-import com.example.movieapplication_retrofit.request.MovieApi;
-import com.example.movieapplication_retrofit.request.Service;
-import com.example.movieapplication_retrofit.response.MovieSerachResponse;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+
+
+
 
 public class MovieListActivity extends AppCompatActivity implements OnMovieListener {
 
-    Button btn;
-    RecyclerView recyclerView;
-    MovieRecyclerView adapter;
+    // RecyclerView
+    private RecyclerView recyclerView;
+    private MovieRecyclerView movieRecyclerAdapter;
+
+
+    // ViewModel
     private MovieListViewModel movieListViewModel;
+
+    boolean isPopular = true;   // True for popular
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        recyclerView = findViewById(R.id.rv);
+        // Toolbar
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
+        // SearchView
+        SetupSearchView();
+
+        recyclerView = findViewById(R.id.recyclerView);
         movieListViewModel = new ViewModelProvider(this).get(MovieListViewModel.class);
 
-        ObserveAnyChange();
         ConfigureRecyclerView();
+        ObserveAnyChange();
+        ObservePopular();
+        movieListViewModel.searchMoviePop(1);
 
-        searchMovieApi("fast", 1);
-
+        Log.v("Tagy", "ispop: " +isPopular);
 
     }
 
-    private void ObserveAnyChange(){
-        movieListViewModel.getmMovies().observe(this, new Observer<List<MovieModel>>() {
+    private void ObservePopular(){
+        movieListViewModel.getPop().observe(this, new Observer<List<MovieModel>>() {
             @Override
             public void onChanged(List<MovieModel> movieModels) {
-                if(movieModels != null){
-                    for(MovieModel movieModel: movieModels){
-                        Log.d("TAG", "onChanged: "+movieModel.getTitle());
-                        adapter.setmMovies(movieModels);
+                // Observing for any data change
+                if (movieModels != null){
+                    for (MovieModel movieModel: movieModels){
+                        // Get the data in log
+                        movieRecyclerAdapter.setmMovies(movieModels);
+
+
+
+
                     }
                 }
 
             }
         });
-    }
 
-    private  void searchMovieApi(String query, int pageNumber){
-        movieListViewModel.searchMovieApi(query, pageNumber);
 
     }
-    private void ConfigureRecyclerView(){
-        adapter = new MovieRecyclerView(this);
-        recyclerView.setAdapter(adapter);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+
+    // Observing any data change
+    private void ObserveAnyChange(){
+        movieListViewModel.getMovies().observe(this, new Observer<List<MovieModel>>() {
+            @Override
+            public void onChanged(List<MovieModel> movieModels) {
+                // Observing for any data change
+                if (movieModels != null){
+                    for (MovieModel movieModel: movieModels){
+                        // Get the data in log
+                        movieRecyclerAdapter.setmMovies(movieModels);
+
+
+
+                    }
+                }
+
+            }
+        });
+
+
+    }
+
+    // 5- Intializing recyclerView & adding data to it
+    private void ConfigureRecyclerView() {
+
+
+        movieRecyclerAdapter = new MovieRecyclerView( this);
+        recyclerView.setAdapter(movieRecyclerAdapter);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL,false));
+
+
+
+
+        // RecyclerView Pagination
+        // Loading next page of api response
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                if (!recyclerView.canScrollVertically(1)){
+                    // Here we need to display the next search results on the next page of api
+                    movieListViewModel.searchNextpage();
+
+                }
+
+            }
+        });
+
+
+
+
+
     }
 
     @Override
     public void onMovieClick(int position) {
-        Toast.makeText(this, ""+position, Toast.LENGTH_SHORT).show();
+       // Toast.makeText(this, "The Position "  +position, Toast.LENGTH_SHORT).show();
+
+        // We don't need position of the movie in recyclerview
+        // WE NEED THE ID OF THE MOVIE IN ORDER TO GET ALL IT"S DETAILS
+
+        Intent intent = new Intent(this, MovieDetails.class);
+        intent.putExtra("movie", movieRecyclerAdapter.getSelectedMovie(position));
+        startActivity(intent);
+
+
+
+
     }
 
     @Override
     public void onCategoryClick(String category) {
 
     }
-    /*private void GetRetrofitResponse() {
-        MovieApi movieApi = Service.getMovieApi();
-        Call<MovieSerachResponse> responseCall = movieApi.searchMovie(
-                Credentials.API_KEY,
-                "Action",
-                1
-        );
 
-        responseCall.enqueue(new Callback<MovieSerachResponse>() {
+    // Get data from searchview & query the api to get the results (Movies)
+    private void SetupSearchView() {
+        final SearchView searchView = findViewById(R.id.search_view);
+
+
+        // Detect Search
+        searchView.setOnSearchClickListener(new View.OnClickListener() {
             @Override
-            public void onResponse(Call<MovieSerachResponse> call, Response<MovieSerachResponse> response) {
-                if(response.code() == 200){
-                    Log.d("TAG", "Response"+response.body().toString());
-
-                    List<MovieModel> movies = new ArrayList<>(response.body().getMovies());
-
-                    for(MovieModel movie : movies){
-                        Log.d("TAG", "Release Date"+movie.getRelease_date());
-
-                    }
-                }
-                else{
-                    try{
-                        Log.d("TAG", "Error"+response.errorBody().string());
-                    }
-                    catch (Exception e){
-
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(Call<MovieSerachResponse> call, Throwable t) {
+            public void onClick(View v) {
+                //do what you want when search view expended
+                isPopular = false;
+                Log.v("Tagy", "ispop: " +isPopular);
 
             }
         });
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                //do what you want  searchview is not expanded
+                return false;
+            }
+        });
+
+
+
+
+        // Make search query
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                movieListViewModel.searchMovieApi(
+                        // The search string getted from searchview
+                        query,
+                        1
+                );
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+
+
+
+
+
+
+
+
+
     }
 
-
-    private void GetMovieById(){
-        MovieApi movieApi = Service.getMovieApi();
-        Call<MovieModel> responseCall = movieApi.getMovie(
-                550,
-                Credentials.API_KEY
-        );
-
-        responseCall.enqueue(new Callback<MovieModel>() {
-            @Override
-            public void onResponse(Call<MovieModel> call, Response<MovieModel> response) {
-                if(response.code() == 200){
-                    Log.d("TAG", "Response"+response.body().toString());
-
-                    MovieModel movie = response.body();
-
-
-                        Log.d("TAG", "Title: "+movie.getTitle());
-
-
-                }
-                else{
-                    try{
-                        Log.d("TAG", "Error"+response.errorBody().string());
-                    }
-                    catch (Exception e){
-
-                    }
-                }
-
-            }
-
-            @Override
-            public void onFailure(Call<MovieModel> call, Throwable t) {
-
-            }
-        });
-    }*/
 }
+

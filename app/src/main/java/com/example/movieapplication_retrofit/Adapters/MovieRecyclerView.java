@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.movieapplication_retrofit.Model.MovieModel;
 import com.example.movieapplication_retrofit.R;
+import com.example.movieapplication_retrofit.Utils.Credentials;
 
 
 import java.util.List;
@@ -19,6 +20,12 @@ public class MovieRecyclerView extends RecyclerView.Adapter<RecyclerView.ViewHol
     private List<MovieModel> mMovies;
     private OnMovieListener onMovieListener;
 
+
+    private static final int DISPLAY_POP = 1;
+    private static final int DISPLAY_SEARCH = 2;
+
+
+
     public MovieRecyclerView(OnMovieListener onMovieListener) {
         this.onMovieListener = onMovieListener;
     }
@@ -26,31 +33,51 @@ public class MovieRecyclerView extends RecyclerView.Adapter<RecyclerView.ViewHol
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.movie_list_item,
-                parent,false);
-        return new MovieViewHolder(view, onMovieListener);
-    }
+        View view = null;
+
+            if (viewType == DISPLAY_SEARCH) {
+
+                view = LayoutInflater.from(parent.getContext()).inflate(R.layout.movie_list_item,
+                        parent, false);
+                return new MovieViewHolder(view, onMovieListener);
+            }
+
+             else {
+                view = LayoutInflater.from(parent.getContext()).inflate(R.layout.popular_layout,
+                        parent, false);
+                return new Popular_view_holder(view, onMovieListener);
+            }
+
+
+        }
+
+
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int i) {
 
-        ((MovieViewHolder)holder).title.setText(mMovies.get(i).getTitle());
-        ((MovieViewHolder)holder).release_date.setText(mMovies.get(i).getRelease_date());
+        int itemViewType = getItemViewType(i);
+        if (itemViewType == DISPLAY_SEARCH){
 
+            // vote average is over 10, and our rating bar is over 5 stars: dividing by 2
+            ((MovieViewHolder)holder).ratingBar.setRating((mMovies.get(i).getVote_average())/2);
 
-        // Their is an error in runtime duration
-        // Let's Fix this error
-        ((MovieViewHolder)holder).duration.setText(mMovies.get(i).getOriginal_language());
+            // ImageView: Using Glide Library
+            Glide.with(holder.itemView.getContext())
+                    .load( "https://image.tmdb.org/t/p/w500/"
+                            +mMovies.get(i).getPoster_path())
+                    .into(((MovieViewHolder)holder).imageView);
 
-        // vote average is over 10, and our rating bar is over 5 stars: dividing by 2
-        ((MovieViewHolder)holder).ratingBar.setRating((mMovies.get(i).getVote_average())/2);
+        }else{
+            ((Popular_view_holder)holder).ratingBar_pop.setRating(mMovies.get(i).getVote_average());
 
+            // ImageView: Using Glide Library
+            Glide.with(holder.itemView.getContext())
+                    .load( "https://image.tmdb.org/t/p/w500/"
+                            +mMovies.get(i).getPoster_path())
+                    .into(((Popular_view_holder)holder).imageView_pop);
 
-        // ImageView: Using Glide Library
-        Glide.with(holder.itemView.getContext())
-                .load( "https://image.tmdb.org/t/p/w500/"
-                        +mMovies.get(i).getPoster_path())
-                .into(((MovieViewHolder)holder).imageView);
+        }
 
 
 
@@ -69,4 +96,27 @@ public class MovieRecyclerView extends RecyclerView.Adapter<RecyclerView.ViewHol
         this.mMovies = mMovies;
         notifyDataSetChanged();
     }
+
+
+    // Getting the id of the movie clicked
+    public MovieModel getSelectedMovie(int position){
+        if (mMovies != null){
+            if (mMovies.size() > 0){
+                return mMovies.get(position);
+            }
+        }
+        return  null;
+    }
+
+
+    @Override
+    public int getItemViewType(int position) {
+
+        if (Credentials.POPULAR){
+            return DISPLAY_POP;
+        }
+        else
+            return DISPLAY_SEARCH;
+    }
+
 }
